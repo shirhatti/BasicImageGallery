@@ -7,6 +7,8 @@ using Microsoft.WindowsAzure.Storage.Blob;
 using ImageGallery.Model;
 using CoreImageGallery.Data;
 using CoreImageGallery.Extensions;
+using System.Linq;
+using System;
 
 namespace CoreImageGallery.Services
 {
@@ -43,28 +45,44 @@ namespace CoreImageGallery.Services
             var imageBlob = _uploadContainer.GetBlockBlobReference(fileName);
             await imageBlob.UploadFromStreamAsync(stream);
 
-            await UploadUtilities.RecordImageUploadedAsync(_dbContext, uploadId, fileName, imageBlob.Uri.ToString(), userId);
+            //added code: get the URI from _publicContainer instead of _uploadContainer
+            string imagePath = imageBlob.Uri.ToString().Replace("images", "images-watermarked");
+
+            //store the _publicContainer URI instead of upload container URI
+            //await UploadUtilities.RecordImageUploadedAsync(_dbContext, uploadId, fileName, imageBlob.Uri.ToString(), userId);
+            await UploadUtilities.RecordImageUploadedAsync(_dbContext, uploadId, fileName, imagePath, userId);
         }
 
         public async Task<IEnumerable<UploadedImage>> GetImagesAsync()
         {
             await InitializeResourcesAsync();
 
-            var imageList = new List<UploadedImage>();
-            var token = new BlobContinuationToken();
-            var blobList = await _publicContainer.ListBlobsSegmentedAsync(ImagePrefix, true, BlobListingDetails.All, 100, token, null, null);
+            //var imageList = new List<UploadedImage>();
+            //var token = new BlobContinuationToken();
+            //var blobList = await _publicContainer.ListBlobsSegmentedAsync(ImagePrefix, true, BlobListingDetails.All, 100, token, null, null);
 
-            foreach (var blob in blobList.Results)
-            {
-                var image = new UploadedImage
-                {
-                    ImagePath = blob.Uri.ToString()
-                };
+            //foreach (var blob in blobList.Results)
+            //{
+            //    var image = new UploadedImage
+            //    {
+            //        ImagePath = blob.Uri.ToString()
+            //    };
 
-                imageList.Add(image);
-            }
+            //    imageList.Add(image);
+            //}
 
-            return imageList;
+            //added code: pull imagelist from database
+            var imageList = _dbContext.Images;
+
+            return imageList.Select(i => new UploadedImage { FileName = i.FileName, Id = i.Id, ImagePath = TransformBlobPathToLocalUri(i.ImagePath), UploadTime = i.UploadTime, UserHash = i.UserHash });
+        }
+
+        private static string TransformBlobPathToLocalUri(string imagePath)
+        {
+            var uri = new Uri(imagePath);
+            var localPath = uri.LocalPath;
+            localPath = localPath.Replace("/images-watermarked/", "/image/");
+            return localPath;
         }
 
         private async Task InitializeResourcesAsync()

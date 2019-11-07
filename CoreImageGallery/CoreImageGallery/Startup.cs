@@ -30,9 +30,15 @@ namespace CoreImageGallery
         public void ConfigureServices(IServiceCollection services)
         {
             //for asp.net core 3.0 MVC
-            //services.AddControllers();
+            services.AddControllers();
+
+            // Adding the following lines to enable application insights and profiler.
+            services.AddApplicationInsightsTelemetry();
+            services.AddServiceProfiler();
+
             services.AddControllersWithViews();
             services.AddRazorPages();
+
 
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
@@ -53,6 +59,7 @@ namespace CoreImageGallery
 
             services.AddScoped<IStorageService, AzStorageService>();
             //services.AddScoped<IStorageService, FileStorageService>();
+            services.AddScoped<IImageProvider, WatermarkedImageProvider>();
 
             // Register no-op EmailSender used by account confirmation and password reset during development
             // For more information on how to enable account confirmation and password reset please visit https://go.microsoft.com/fwlink/?LinkID=532713
