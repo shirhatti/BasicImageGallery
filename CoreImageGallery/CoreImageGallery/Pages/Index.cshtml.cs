@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using CoreImageGallery.Services;
@@ -14,9 +15,9 @@ namespace CoreImageGallery.Pages
 {
     public class IndexModel : PageModel
     {
-        public IEnumerable<UploadedImage> Images;
+        public IEnumerable<UploadedImage> Images { get; private set; }
 
-        private IStorageService _storageService;
+        private readonly IStorageService _storageService;
 
         public IndexModel(IStorageService storageService)
         {
@@ -25,8 +26,22 @@ namespace CoreImageGallery.Pages
 
         public async Task OnGetAsync()
         {
-            this.Images = await _storageService.GetImagesAsync();
-        }
+            var images = await _storageService.GetImagesAsync();
 
+            List<UploadedImage> results = new List<UploadedImage>();
+            using (HttpClient client = new HttpClient())
+            {
+                foreach (var image in images)
+                {
+                    HttpResponseMessage response = await client.GetAsync(image.ImagePath);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        results.Add(image);
+                    }
+                }
+            }
+
+            this.Images = results;
+        }
     }
 }
