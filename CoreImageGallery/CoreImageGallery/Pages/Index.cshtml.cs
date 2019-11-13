@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
+using System.IO.Compression;
 using System.Net.Http;
-using System.Security.Claims;
+using System.Net.Mime;
 using System.Threading.Tasks;
 using CoreImageGallery.Services;
 using ImageGallery.Model;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -16,32 +15,51 @@ namespace CoreImageGallery.Pages
     public class IndexModel : PageModel
     {
         public IEnumerable<UploadedImage> Images { get; private set; }
-
         private readonly IStorageService _storageService;
+        private readonly IHttpClientFactory _httpClientFactory;
 
-        public IndexModel(IStorageService storageService)
+        public IndexModel(
+            IStorageService storageService,
+            IHttpClientFactory httpClientFactory,
+            IStreamValidationService streamValidationService)
         {
-            _storageService = storageService;
+            _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
+            _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
         }
 
         public async Task OnGetAsync()
         {
             var images = await _storageService.GetImagesAsync();
+            this.Images = images;
+        }
 
-            List<UploadedImage> results = new List<UploadedImage>();
-            using (HttpClient client = new HttpClient())
+        public async Task<IActionResult> OnPostDownloadAsync()
+        {
+            var images = await _storageService.GetImagesAsync();
+
+            HttpClient httpClient = _httpClientFactory.CreateClient();
+            httpClient.BaseAddress = new Uri($"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}{HttpContext.Request.PathBase}");
+
+            using (var memoryStream = new MemoryStream())
             {
-                foreach (var image in images)
+                using (ZipArchive zipArchive = new ZipArchive(memoryStream, ZipArchiveMode.Create))
                 {
-                    HttpResponseMessage response = await client.GetAsync(image.ImagePath);
-                    if (response.IsSuccessStatusCode)
+                    foreach (UploadedImage image in images)
                     {
-                        results.Add(image);
+                        using (Stream streamReader = await httpClient.GetStreamAsync(image.ImagePath))
+                        {
+                            var zipArchiveEntry = zipArchive.CreateEntry(image.FileName, CompressionLevel.NoCompression);
+                            using (Stream zipArchiveEntryStream = zipArchiveEntry.Open())
+                            {
+                                await streamReader.CopyToAsync(zipArchiveEntryStream);
+                                await streamReader.FlushAsync();
+                            }
+                        }
                     }
                 }
-            }
 
-            this.Images = results;
+                return File(memoryStream.ToArray(), MediaTypeNames.Application.Zip, Path.ChangeExtension(Guid.NewGuid().ToString(), ".zip"));
+            }
         }
     }
 }

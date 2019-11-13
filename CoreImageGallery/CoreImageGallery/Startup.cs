@@ -1,18 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using CoreImageGallery.Data;
 using CoreImageGallery.Services;
-using ImageGallery.Model;
-using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.Extensions.Hosting;
 
 namespace CoreImageGallery
@@ -34,7 +28,7 @@ namespace CoreImageGallery
 
             // Adding the following lines to enable application insights and profiler.
             services.AddApplicationInsightsTelemetry();
-            services.AddServiceProfiler();
+            services.AddServiceProfiler(options => options.InitialDelay = TimeSpan.FromSeconds(10));
 
             services.AddControllersWithViews();
             services.AddRazorPages();
@@ -42,8 +36,6 @@ namespace CoreImageGallery
 
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
-
-
 
             services.AddIdentity<ApplicationUser, IdentityRole>()
                 .AddEntityFrameworkStores<ApplicationDbContext>()
@@ -61,9 +53,13 @@ namespace CoreImageGallery
             //services.AddScoped<IStorageService, FileStorageService>();
             services.AddScoped<IImageProvider, WatermarkedImageProvider>();
 
+            services.AddScoped<IStreamValidationService, StreamValidationService>();
+
             // Register no-op EmailSender used by account confirmation and password reset during development
             // For more information on how to enable account confirmation and password reset please visit https://go.microsoft.com/fwlink/?LinkID=532713
             services.AddSingleton<IEmailSender, EmailSender>();
+
+            services.AddHttpClient();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -91,8 +87,6 @@ namespace CoreImageGallery
 
             app.UseAuthentication();
             app.UseHttpsRedirection();
-
- 
 
             app.UseCors();
 
