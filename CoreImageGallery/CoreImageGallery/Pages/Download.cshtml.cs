@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
@@ -12,29 +12,21 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace CoreImageGallery.Pages
 {
-    public class IndexModel : PageModel
+    public class DownloadModel : PageModel
     {
-        public IEnumerable<UploadedImage> Images { get; private set; }
         private readonly IStorageService _storageService;
         private readonly IHttpClientFactory _httpClientFactory;
 
-        public IndexModel(
-            IStorageService storageService,
+        public DownloadModel(IStorageService storageService,
             IHttpClientFactory httpClientFactory)
         {
-            _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
-            _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
+            _storageService = storageService ?? throw new System.ArgumentNullException(nameof(storageService));
+            _httpClientFactory = httpClientFactory ?? throw new System.ArgumentNullException(nameof(httpClientFactory));
         }
 
-        public async Task OnGetAsync()
+        public async Task<IActionResult> OnGetAsync()
         {
-            var images = await _storageService.GetImagesAsync();
-            this.Images = images;
-        }
-
-        public async Task<IActionResult> OnPostDownloadAsync()
-        {
-            var images = await _storageService.GetImagesAsync();
+            IEnumerable<UploadedImage> images = await _storageService.GetImagesAsync();
 
             HttpClient httpClient = _httpClientFactory.CreateClient();
             httpClient.BaseAddress = new Uri($"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}{HttpContext.Request.PathBase}");
