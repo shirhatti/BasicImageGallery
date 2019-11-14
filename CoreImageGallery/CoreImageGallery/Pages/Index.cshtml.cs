@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Security.Claims;
+using System.IO.Compression;
+using System.Net.Http;
+using System.Net.Mime;
 using System.Threading.Tasks;
 using CoreImageGallery.Services;
 using ImageGallery.Model;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -14,19 +14,22 @@ namespace CoreImageGallery.Pages
 {
     public class IndexModel : PageModel
     {
-        public IEnumerable<UploadedImage> Images;
+        public IEnumerable<UploadedImage> Images { get; private set; }
+        private readonly IStorageService _storageService;
+        private readonly IHttpClientFactory _httpClientFactory;
 
-        private IStorageService _storageService;
-
-        public IndexModel(IStorageService storageService)
+        public IndexModel(
+            IStorageService storageService,
+            IHttpClientFactory httpClientFactory)
         {
-            _storageService = storageService;
+            _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
+            _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
         }
 
         public async Task OnGetAsync()
         {
-            this.Images = await _storageService.GetImagesAsync();
+            var images = await _storageService.GetImagesAsync();
+            this.Images = images;
         }
-
     }
 }
