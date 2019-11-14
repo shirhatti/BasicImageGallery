@@ -35,6 +35,7 @@ namespace CoreImageGallery.Pages
             {
                 using (ZipArchive zipArchive = new ZipArchive(memoryStream, ZipArchiveMode.Create))
                 {
+                    // Potential perf improvement: parallel the streaming.
                     foreach (UploadedImage image in images)
                     {
                         using (Stream streamReader = await httpClient.GetStreamAsync(image.ImagePath))

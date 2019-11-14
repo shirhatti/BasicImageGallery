@@ -31,34 +31,5 @@ namespace CoreImageGallery.Pages
             var images = await _storageService.GetImagesAsync();
             this.Images = images;
         }
-
-        public async Task<IActionResult> OnPostDownloadAsync()
-        {
-            var images = await _storageService.GetImagesAsync();
-
-            HttpClient httpClient = _httpClientFactory.CreateClient();
-            httpClient.BaseAddress = new Uri($"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}{HttpContext.Request.PathBase}");
-
-            using (var memoryStream = new MemoryStream())
-            {
-                using (ZipArchive zipArchive = new ZipArchive(memoryStream, ZipArchiveMode.Create))
-                {
-                    foreach (UploadedImage image in images)
-                    {
-                        using (Stream streamReader = await httpClient.GetStreamAsync(image.ImagePath))
-                        {
-                            var zipArchiveEntry = zipArchive.CreateEntry(image.FileName, CompressionLevel.NoCompression);
-                            using (Stream zipArchiveEntryStream = zipArchiveEntry.Open())
-                            {
-                                await streamReader.CopyToAsync(zipArchiveEntryStream);
-                                await streamReader.FlushAsync();
-                            }
-                        }
-                    }
-                }
-
-                return File(memoryStream.ToArray(), MediaTypeNames.Application.Zip, Path.ChangeExtension(Guid.NewGuid().ToString(), ".zip"));
-            }
-        }
     }
 }
