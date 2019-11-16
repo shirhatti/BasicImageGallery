@@ -30,6 +30,7 @@ namespace CoreImageGallery.Pages
         public async Task<IActionResult> OnGetAsync()
         {
             IEnumerable<UploadedImage> images = await _storageService.GetImagesAsync().ConfigureAwait(false);
+
             List<Task> streamTasks = new List<Task>();
 
             using (var memoryStream = new MemoryStream())

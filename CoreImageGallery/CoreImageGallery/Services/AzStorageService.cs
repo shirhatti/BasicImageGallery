@@ -9,13 +9,15 @@ using CoreImageGallery.Data;
 using CoreImageGallery.Extensions;
 using System.Linq;
 using System;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace CoreImageGallery.Services
 {
     public class AzStorageService : IStorageService
     {
         private static bool ResourcesInitialized { get; set; } = false;
-
+        private const string MemoryCacheKey = nameof(AzStorageService);
+        private readonly IMemoryCache _memoryCache;
         private const string ImagePrefix = "img_";
         private readonly CloudStorageAccount _account;
         private readonly CloudBlobClient _client;
@@ -25,7 +27,7 @@ namespace CoreImageGallery.Services
 
         private ApplicationDbContext _dbContext;
 
-        public AzStorageService(IConfiguration config, ApplicationDbContext dbContext)
+        public AzStorageService(IConfiguration config, ApplicationDbContext dbContext, IMemoryCache memoryCache)
         {
             _connectionString = config["AzureStorageConnection"];
             _account = CloudStorageAccount.Parse(_connectionString);
@@ -34,6 +36,7 @@ namespace CoreImageGallery.Services
             _publicContainer = _client.GetContainerReference(Config.WatermarkedContainer);
 
             _dbContext = dbContext;
+            _memoryCache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));
         }
 
         public async Task AddImageAsync(Stream stream, string originalName, string userName)
@@ -57,24 +60,12 @@ namespace CoreImageGallery.Services
         {
             await InitializeResourcesAsync();
 
-            //var imageList = new List<UploadedImage>();
-            //var token = new BlobContinuationToken();
-            //var blobList = await _publicContainer.ListBlobsSegmentedAsync(ImagePrefix, true, BlobListingDetails.All, 100, token, null, null);
-
-            //foreach (var blob in blobList.Results)
-            //{
-            //    var image = new UploadedImage
-            //    {
-            //        ImagePath = blob.Uri.ToString()
-            //    };
-
-            //    imageList.Add(image);
-            //}
-
-            //added code: pull imagelist from database
-            var imageList = _dbContext.Images;
-
-            return imageList.Select(i => new UploadedImage { FileName = i.FileName, Id = i.Id, ImagePath = TransformBlobPathToLocalUri(i.ImagePath), UploadTime = i.UploadTime, UserHash = i.UserHash });
+            return _memoryCache.GetOrCreate<IEnumerable<UploadedImage>>(MemoryCacheKey, (entry) =>
+            {
+                entry.SetAbsoluteExpiration(DateTimeOffset.Now.AddMinutes(1));
+                var imageList = _dbContext.Images;
+                return imageList.Select(i => new UploadedImage { FileName = i.FileName, Id = i.Id, ImagePath = TransformBlobPathToLocalUri(i.ImagePath), UploadTime = i.UploadTime, UserHash = i.UserHash }).ToList();
+            });
         }
 
         private static string TransformBlobPathToLocalUri(string imagePath)
