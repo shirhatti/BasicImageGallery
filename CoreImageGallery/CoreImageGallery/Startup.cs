@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using CoreImageGallery.Data;
 using CoreImageGallery.Services;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace CoreImageGallery
 {
@@ -48,6 +49,12 @@ namespace CoreImageGallery
                     options.Conventions.AuthorizePage("/Account/Logout");
                     //options.Conventions.AuthorizePage("/Upload");
                 });
+
+            services.AddSingleton<IMemoryCache>(p =>
+            {
+                MemoryCache cache = new MemoryCache(new MemoryCacheOptions());
+                return cache;
+            });
 
             services.AddScoped<IStorageService, AzStorageService>();
             //services.AddScoped<IStorageService, FileStorageService>();
