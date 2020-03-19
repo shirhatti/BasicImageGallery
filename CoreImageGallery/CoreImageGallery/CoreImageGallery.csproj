@@ -3,6 +3,7 @@
     <TargetFramework>netcoreapp3.0</TargetFramework>
     <UserSecretsId>aspnet-CoreImageGallery-CBB3EB3C-93B7-4518-81AD-A2D9C79C64B0</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <ApplicationInsightsResourceId>/subscriptions/6de210d0-cc8d-4f7e-ba0b-295f894b0638/resourcegroups/shirhatti-2-CoreImageGallery/providers/microsoft.insights/components/scoreimagegalleryappinsights</ApplicationInsightsResourceId>
   </PropertyGroup>
   <ItemGroup>
     <None Remove="Properties\PublishProfiles\CoreImageGallery - Web Deploy.pubxml" />
@@ -11,6 +12,7 @@
     <None Remove="Properties\PublishProfiles\CoreImageGallery20180326075733-Slot2 - Web Deploy.pubxml" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.12.0" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="3.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="3.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="3.0.0" />
@@ -38,6 +40,9 @@
     <Content Update="Pages\_UploadPartial.cshtml">
       <Pack>$(IncludeRazorContentInPack)</Pack>
     </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <WCFMetadata Include="Connected Services" />
   </ItemGroup>
 
 </Project>

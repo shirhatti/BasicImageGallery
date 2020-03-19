@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using CoreImageGallery.Data;
 using CoreImageGallery.Services;
 using Microsoft.Extensions.Hosting;
+using Microsoft.ApplicationInsights.Extensibility.EventCounterCollector;
 
 namespace CoreImageGallery
 {
@@ -54,6 +55,12 @@ namespace CoreImageGallery
             services.AddSingleton<IEmailSender, EmailSender>();
 
             services.AddHttpClient();
+            services.AddApplicationInsightsTelemetry();
+
+            services.ConfigureTelemetryModule<EventCounterCollectionModule>((module, options) =>
+            {
+                module.Counters.Add(new EventCounterCollectionRequest("CoreImageGallery", "images-downloaded"));
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
