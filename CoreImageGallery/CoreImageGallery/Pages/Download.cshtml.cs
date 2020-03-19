@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
@@ -31,6 +31,8 @@ namespace CoreImageGallery.Pages
             HttpClient httpClient = _httpClientFactory.CreateClient();
             httpClient.BaseAddress = new Uri($"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}{HttpContext.Request.PathBase}");
 
+            int countImages = 0;
+
             using (var memoryStream = new MemoryStream())
             {
                 using (ZipArchive zipArchive = new ZipArchive(memoryStream, ZipArchiveMode.Create))
@@ -38,6 +40,7 @@ namespace CoreImageGallery.Pages
                     // Potential perf improvement: parallel the streaming.
                     foreach (UploadedImage image in images)
                     {
+                        countImages++;
                         using (Stream streamReader = await httpClient.GetStreamAsync(image.ImagePath))
                         {
                             var zipArchiveEntry = zipArchive.CreateEntry(image.FileName, CompressionLevel.NoCompression);
@@ -50,6 +53,7 @@ namespace CoreImageGallery.Pages
                     }
                 }
 
+                CoreImageGalleryEventSource.Log.ImagesDownloaded(countImages);
                 return File(memoryStream.ToArray(), MediaTypeNames.Application.Zip, Path.ChangeExtension(Guid.NewGuid().ToString(), ".zip"));
             }
         }
