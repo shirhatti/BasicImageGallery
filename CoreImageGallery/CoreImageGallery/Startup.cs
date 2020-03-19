@@ -26,10 +26,6 @@ namespace CoreImageGallery
             //for asp.net core 3.0 MVC
             services.AddControllers();
 
-            // Adding the following lines to enable application insights and profiler.
-            services.AddApplicationInsightsTelemetry();
-            services.AddServiceProfiler(options => options.InitialDelay = TimeSpan.FromSeconds(10));
-
             services.AddControllersWithViews();
             services.AddRazorPages();
 
